@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Preference Selector</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+      color: #1a1a2e;
+      font-size: 1.8rem;
+    }
+
+    .progress {
+      margin-bottom: 1.5rem;
+      color: #555;
+      font-size: 1rem;
+    }
+
+    .container {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 300px;
+      border: 3px solid transparent;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      border-color: #4361ee;
+    }
+
+    .card img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card .label {
+      padding: 1rem;
+      text-align: center;
+      font-weight: 600;
+      color: #333;
+      font-size: 1.1rem;
+    }
+
+    /* Recap styles */
+    .recap {
+      background: #fff;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      max-width: 650px;
+      width: 100%;
+    }
+
+    .recap h2 {
+      margin-bottom: 1.5rem;
+      color: #1a1a2e;
+      text-align: center;
+    }
+
+    .recap-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .recap-item:last-child { border-bottom: none; }
+
+    .recap-item img {
+      width: 80px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .recap-item .round-label {
+      font-weight: 600;
+      color: #4361ee;
+      min-width: 75px;
+    }
+
+    .recap-item .choice-label {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .restart-btn {
+      display: block;
+      margin: 1.5rem auto 0;
+      padding: 0.75rem 2rem;
+      background: #4361ee;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .restart-btn:hover { background: #3a56d4; }
+  </style>
+</head>
+<body>
+  <h1>Pick Your Preference</h1>
+  <p class="progress" id="progress">Round 1 of 5</p>
+  <div class="container" id="container"></div>
+
+  <script>
+    const rounds = [
+      {
+        optionA: { src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600", label: "Mountains" },
+        optionB: { src: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600", label: "Beach" },
+      },
+      {
+        optionA: { src: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=600", label: "Starry Night" },
+        optionB: { src: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=600", label: "Sunrise" },
+      },
+      {
+        optionA: { src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600", label: "Lake" },
+        optionB: { src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600", label: "Forest" },
+      },
+      {
+        optionA: { src: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600", label: "City Skyline" },
+        optionB: { src: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600", label: "Countryside" },
+      },
+      {
+        optionA: { src: "https://images.unsplash.com/photo-1494526585095-c41746248156?w=600", label: "Desert" },
+        optionB: { src: "https://images.unsplash.com/photo-1476673160081-cf065607f449?w=600", label: "Waterfall" },
+      },
+    ];
+
+    let currentRound = 0;
+    const choices = [];
+
+    function renderRound() {
+      const container = document.getElementById("container");
+      const progress = document.getElementById("progress");
+      const round = rounds[currentRound];
+
+      progress.textContent = `Round ${currentRound + 1} of ${rounds.length}`;
+      container.innerHTML = "";
+
+      ["optionA", "optionB"].forEach((key) => {
+        const option = round[key];
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<img src="${option.src}" alt="${option.label}"><div class="label">${option.label}</div>`;
+        card.addEventListener("click", () => selectOption(option));
+        container.appendChild(card);
+      });
+    }
+
+    function selectOption(option) {
+      choices.push({ round: currentRound + 1, ...option });
+      currentRound++;
+
+      if (currentRound < rounds.length) {
+        renderRound();
+      } else {
+        showRecap();
+      }
+    }
+
+    function showRecap() {
+      document.getElementById("progress").textContent = "All done!";
+      const container = document.getElementById("container");
+      container.innerHTML = "";
+
+      const recap = document.createElement("div");
+      recap.className = "recap";
+      recap.innerHTML = `<h2>Your Choices</h2>` +
+        choices.map(c =>
+          `<div class="recap-item">
+            <span class="round-label">Round ${c.round}</span>
+            <img src="${c.src}" alt="${c.label}">
+            <span class="choice-label">${c.label}</span>
+          </div>`
+        ).join("") +
+        `<button class="restart-btn" onclick="restart()">Start Over</button>`;
+
+      container.appendChild(recap);
+    }
+
+    function restart() {
+      currentRound = 0;
+      choices.length = 0;
+      renderRound();
+    }
+
+    renderRound();
+  </script>
+</body>
+</html>
