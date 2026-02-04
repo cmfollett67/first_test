@@ -8,8 +8,8 @@
 </head>
 <body>
   <nav>
-    <a href="upload.html">Upload</a>
     <a href="search.html">Search</a>
+    <a href="upload.html">Upload</a>
     <a href="archive.html" class="active">Archive</a>
   </nav>
 
@@ -101,7 +101,7 @@
         card.className = 'photo-card';
 
         const img = document.createElement('img');
-        img.src = `/api/photos/${entry.filename}`;
+        img.src = `/uploads/${entry.filename}`;
         img.alt = entry.tags.join(', ');
         img.loading = 'lazy';
 
@@ -155,7 +155,7 @@
 
         const tdImg = document.createElement('td');
         const img = document.createElement('img');
-        img.src = `/api/photos/${entry.filename}`;
+        img.src = `/uploads/${entry.filename}`;
         img.alt = entry.tags.join(', ');
         img.className = 'list-thumbnail';
         img.loading = 'lazy';
@@ -201,7 +201,7 @@
       if (!confirm('Delete this photo? This cannot be undone.')) return;
 
       try {
-        const res = await fetch(`/api/photos/${filename}`, { method: 'DELETE' });
+        const res = await fetch(`/api/delete/${filename}`, { method: 'DELETE' });
         if (res.ok) {
           photos = photos.filter(p => p.filename !== filename);
           render();

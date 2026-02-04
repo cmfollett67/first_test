@@ -43,7 +43,7 @@ const upload = multer({
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve uploaded photos
-app.use('/api/photos', express.static(UPLOADS_DIR));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Helper: read/write metadata
 function readMetadata() {
@@ -73,8 +73,11 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
   };
 
   const metadata = readMetadata();
-  metadata.push(entry);
-  writeMetadata(metadata);
+  const duplicate = metadata.find(e => e.filename === entry.filename);
+  if (!duplicate) {
+    metadata.push(entry);
+    writeMetadata(metadata);
+  }
 
   res.json({ message: 'Photo uploaded successfully', entry });
 });
@@ -85,8 +88,8 @@ app.get('/api/all', (req, res) => {
   res.json({ results: metadata });
 });
 
-// DELETE /api/photos/:filename — delete a photo and its metadata
-app.delete('/api/photos/:filename', (req, res) => {
+// DELETE /api/delete/:filename — delete a photo and its metadata
+app.delete('/api/delete/:filename', (req, res) => {
   const { filename } = req.params;
   const metadata = readMetadata();
   const index = metadata.findIndex(entry => entry.filename === filename);

@@ -8,8 +8,8 @@
 </head>
 <body>
   <nav>
-    <a href="upload.html">Upload</a>
     <a href="search.html" class="active">Search</a>
+    <a href="upload.html">Upload</a>
     <a href="archive.html">Archive</a>
   </nav>
 
@@ -56,7 +56,7 @@
           card.className = 'photo-card';
 
           const img = document.createElement('img');
-          img.src = `/api/photos/${entry.filename}`;
+          img.src = `/uploads/${entry.filename}`;
           img.alt = entry.tags.join(', ');
           img.loading = 'lazy';
 
