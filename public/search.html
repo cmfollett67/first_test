@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Photos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <a href="upload.html">Upload</a>
+    <a href="search.html" class="active">Search</a>
+  </nav>
+
+  <main>
+    <h1>Search Photos</h1>
+    <form id="search-form">
+      <div class="search-bar">
+        <input type="text" id="query" placeholder="Search by tag..." required>
+        <button type="submit">Search</button>
+      </div>
+    </form>
+
+    <div id="results"></div>
+  </main>
+
+  <script>
+    const form = document.getElementById('search-form');
+    const queryInput = document.getElementById('query');
+    const resultsEl = document.getElementById('results');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const query = queryInput.value.trim();
+      if (!query) return;
+
+      resultsEl.innerHTML = '<p class="loading">Searching...</p>';
+
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        if (data.results.length === 0) {
+          resultsEl.innerHTML = '<p class="no-results">No photos found matching your search.</p>';
+          return;
+        }
+
+        resultsEl.innerHTML = `<p class="result-count">${data.results.length} photo${data.results.length !== 1 ? 's' : ''} found</p>`;
+
+        const grid = document.createElement('div');
+        grid.className = 'photo-grid';
+
+        data.results.forEach(entry => {
+          const card = document.createElement('div');
+          card.className = 'photo-card';
+
+          const img = document.createElement('img');
+          img.src = `/api/photos/${entry.filename}`;
+          img.alt = entry.tags.join(', ');
+          img.loading = 'lazy';
+
+          const tagList = document.createElement('div');
+          tagList.className = 'tag-list';
+          entry.tags.forEach(tag => {
+            const span = document.createElement('span');
+            span.className = 'tag';
+            span.textContent = tag;
+            tagList.appendChild(span);
+          });
+
+          card.appendChild(img);
+          card.appendChild(tagList);
+          grid.appendChild(card);
+        });
+
+        resultsEl.appendChild(grid);
+      } catch (err) {
+        resultsEl.innerHTML = '<p class="error">Network error. Is the server running?</p>';
+      }
+    });
+  </script>
+</body>
+</html>
