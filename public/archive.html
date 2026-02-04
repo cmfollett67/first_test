@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archive</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <a href="upload.html">Upload</a>
+    <a href="search.html">Search</a>
+    <a href="archive.html" class="active">Archive</a>
+  </nav>
+
+  <main>
+    <h1>Archive</h1>
+
+    <div class="archive-controls">
+      <div class="view-toggle">
+        <button id="btn-thumbnail" class="toggle-btn active" title="Thumbnail view">Thumbnails</button>
+        <button id="btn-list" class="toggle-btn" title="List view">List</button>
+      </div>
+      <div class="sort-controls">
+        <label for="sort-select">Sort by:</label>
+        <select id="sort-select">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="alpha-asc">Name A-Z</option>
+          <option value="alpha-desc">Name Z-A</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="archive"></div>
+  </main>
+
+  <script>
+    const archiveEl = document.getElementById('archive');
+    const btnThumbnail = document.getElementById('btn-thumbnail');
+    const btnList = document.getElementById('btn-list');
+    const sortSelect = document.getElementById('sort-select');
+
+    let photos = [];
+    let viewMode = 'thumbnail';
+
+    async function loadPhotos() {
+      archiveEl.innerHTML = '<p class="loading">Loading...</p>';
+      try {
+        const res = await fetch('/api/all');
+        const data = await res.json();
+        photos = data.results;
+        render();
+      } catch (err) {
+        archiveEl.innerHTML = '<p class="error">Failed to load photos. Is the server running?</p>';
+      }
+    }
+
+    function sortPhotos(list) {
+      const sorted = [...list];
+      const mode = sortSelect.value;
+      switch (mode) {
+        case 'newest':
+          sorted.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+          break;
+        case 'oldest':
+          sorted.sort((a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt));
+          break;
+        case 'alpha-asc':
+          sorted.sort((a, b) => a.originalName.localeCompare(b.originalName));
+          break;
+        case 'alpha-desc':
+          sorted.sort((a, b) => b.originalName.localeCompare(a.originalName));
+          break;
+      }
+      return sorted;
+    }
+
+    function render() {
+      if (photos.length === 0) {
+        archiveEl.innerHTML = '<p class="no-results">No photos in the archive yet.</p>';
+        return;
+      }
+
+      const sorted = sortPhotos(photos);
+      archiveEl.innerHTML = '';
+
+      if (viewMode === 'thumbnail') {
+        renderThumbnailView(sorted);
+      } else {
+        renderListView(sorted);
+      }
+    }
+
+    function renderThumbnailView(items) {
+      const grid = document.createElement('div');
+      grid.className = 'photo-grid';
+
+      items.forEach(entry => {
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+
+        const img = document.createElement('img');
+        img.src = `/api/photos/${entry.filename}`;
+        img.alt = entry.tags.join(', ');
+        img.loading = 'lazy';
+
+        const info = document.createElement('div');
+        info.className = 'card-info';
+
+        const tagList = document.createElement('div');
+        tagList.className = 'tag-list';
+        entry.tags.forEach(tag => {
+          const span = document.createElement('span');
+          span.className = 'tag';
+          span.textContent = tag;
+          tagList.appendChild(span);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => deletePhoto(entry.filename));
+
+        info.appendChild(tagList);
+        info.appendChild(deleteBtn);
+        card.appendChild(img);
+        card.appendChild(info);
+        grid.appendChild(card);
+      });
+
+      archiveEl.appendChild(grid);
+    }
+
+    function renderListView(items) {
+      const table = document.createElement('table');
+      table.className = 'archive-table';
+
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Preview</th>
+            <th>Filename</th>
+            <th>Tags</th>
+            <th>Uploaded</th>
+            <th></th>
+          </tr>
+        </thead>
+      `;
+
+      const tbody = document.createElement('tbody');
+
+      items.forEach(entry => {
+        const tr = document.createElement('tr');
+
+        const tdImg = document.createElement('td');
+        const img = document.createElement('img');
+        img.src = `/api/photos/${entry.filename}`;
+        img.alt = entry.tags.join(', ');
+        img.className = 'list-thumbnail';
+        img.loading = 'lazy';
+        tdImg.appendChild(img);
+
+        const tdName = document.createElement('td');
+        tdName.textContent = entry.originalName;
+
+        const tdTags = document.createElement('td');
+        const tagList = document.createElement('div');
+        tagList.className = 'tag-list';
+        entry.tags.forEach(tag => {
+          const span = document.createElement('span');
+          span.className = 'tag';
+          span.textContent = tag;
+          tagList.appendChild(span);
+        });
+        tdTags.appendChild(tagList);
+
+        const tdDate = document.createElement('td');
+        tdDate.textContent = new Date(entry.uploadedAt).toLocaleDateString();
+
+        const tdAction = document.createElement('td');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => deletePhoto(entry.filename));
+        tdAction.appendChild(deleteBtn);
+
+        tr.appendChild(tdImg);
+        tr.appendChild(tdName);
+        tr.appendChild(tdTags);
+        tr.appendChild(tdDate);
+        tr.appendChild(tdAction);
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      archiveEl.appendChild(table);
+    }
+
+    async function deletePhoto(filename) {
+      if (!confirm('Delete this photo? This cannot be undone.')) return;
+
+      try {
+        const res = await fetch(`/api/photos/${filename}`, { method: 'DELETE' });
+        if (res.ok) {
+          photos = photos.filter(p => p.filename !== filename);
+          render();
+        } else {
+          const data = await res.json();
+          alert(data.error || 'Failed to delete photo');
+        }
+      } catch (err) {
+        alert('Network error. Is the server running?');
+      }
+    }
+
+    // View toggle
+    btnThumbnail.addEventListener('click', () => {
+      viewMode = 'thumbnail';
+      btnThumbnail.classList.add('active');
+      btnList.classList.remove('active');
+      render();
+    });
+
+    btnList.addEventListener('click', () => {
+      viewMode = 'list';
+      btnList.classList.add('active');
+      btnThumbnail.classList.remove('active');
+      render();
+    });
+
+    // Sort change
+    sortSelect.addEventListener('change', render);
+
+    // Initial load
+    loadPhotos();
+  </script>
+</body>
+</html>

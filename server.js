@@ -79,6 +79,35 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
   res.json({ message: 'Photo uploaded successfully', entry });
 });
 
+// GET /api/all — return all photos metadata
+app.get('/api/all', (req, res) => {
+  const metadata = readMetadata();
+  res.json({ results: metadata });
+});
+
+// DELETE /api/photos/:filename — delete a photo and its metadata
+app.delete('/api/photos/:filename', (req, res) => {
+  const { filename } = req.params;
+  const metadata = readMetadata();
+  const index = metadata.findIndex(entry => entry.filename === filename);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Photo not found' });
+  }
+
+  // Remove file from disk
+  const filePath = path.join(UPLOADS_DIR, filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+
+  // Remove from metadata
+  metadata.splice(index, 1);
+  writeMetadata(metadata);
+
+  res.json({ message: 'Photo deleted successfully' });
+});
+
 // GET /api/search?q=term — search photos by partial tag match
 app.get('/api/search', (req, res) => {
   const query = (req.query.q || '').trim().toLowerCase();
@@ -107,4 +136,5 @@ app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
   console.log(`Upload page: http://localhost:${PORT}/upload.html`);
   console.log(`Search page: http://localhost:${PORT}/search.html`);
+  console.log(`Archive page: http://localhost:${PORT}/archive.html`);
 });
