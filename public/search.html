@@ -223,9 +223,8 @@
         }
 
         slide.addEventListener('click', () => {
-          if (isVideo) {
-            window.openVideoOverlay(src);
-          }
+          // Navigate to Archive with this asset in view
+          window.location.href = `archive.html?highlight=${encodeURIComponent(entry.filename)}`;
         });
 
         carouselItems.appendChild(slide);
@@ -279,7 +278,7 @@
       if (carouselInterval) clearInterval(carouselInterval);
       carouselInterval = setInterval(() => {
         if (!isPaused) nextSlide();
-      }, 1500);
+      }, 2500);
     }
 
     function resetCarousel() {

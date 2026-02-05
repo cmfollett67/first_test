@@ -141,6 +141,7 @@
       items.forEach(entry => {
         const card = document.createElement('div');
         card.className = 'photo-card';
+        card.dataset.filename = entry.filename;
         const isVideo = entry.mediaType === 'video';
         const src = `/uploads/${entry.filename}`;
 
@@ -227,6 +228,7 @@
 
       items.forEach(entry => {
         const tr = document.createElement('tr');
+        tr.dataset.filename = entry.filename;
         const isVideo = entry.mediaType === 'video';
         const src = `/uploads/${entry.filename}`;
 
@@ -406,8 +408,22 @@
     // Sort change
     sortSelect.addEventListener('change', render);
 
+    // Scroll to highlighted item from query param
+    function scrollToHighlighted() {
+      const params = new URLSearchParams(window.location.search);
+      const highlightFilename = params.get('highlight');
+      if (highlightFilename) {
+        const element = document.querySelector(`[data-filename="${CSS.escape(highlightFilename)}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+
     // Initial load
-    loadPhotos();
+    loadPhotos().then(scrollToHighlighted);
   </script>
 </body>
 </html>
