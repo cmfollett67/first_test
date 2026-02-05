@@ -7,30 +7,36 @@
   overlay.innerHTML = `
     <div class="overlay-backdrop"></div>
     <div class="overlay-content">
-      <button class="overlay-close" aria-label="Close">&times;</button>
+      <button type="button" class="overlay-close" aria-label="Close">&times;</button>
       <video id="overlay-video" controls autoplay></video>
     </div>
   `;
+
+  function close() {
+    const video = overlay.querySelector('#overlay-video');
+    video.pause();
+    video.src = '';
+    overlay.classList.add('hidden');
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(overlay);
 
     const backdrop = overlay.querySelector('.overlay-backdrop');
     const closeBtn = overlay.querySelector('.overlay-close');
-    const video = overlay.querySelector('#overlay-video');
-
-    function close() {
-      video.pause();
-      video.src = '';
-      overlay.classList.add('hidden');
-    }
 
     backdrop.addEventListener('click', close);
-    closeBtn.addEventListener('click', close);
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
-        close();
-      }
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
     });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+      close();
+    }
   });
 
   window.openVideoOverlay = function(src) {
@@ -38,4 +44,6 @@
     video.src = src;
     overlay.classList.remove('hidden');
   };
+
+  window.closeVideoOverlay = close;
 })();
