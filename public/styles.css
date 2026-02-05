@@ -569,6 +569,93 @@ select:focus {
   display: block;
 }
 
+/* Button group */
+.btn-group {
+  display: flex;
+  gap: 0.375rem;
+}
+
+/* Edit button */
+.edit-btn {
+  padding: 0.25rem 0.625rem;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.edit-btn:hover {
+  background: var(--color-hover-bg);
+  border-color: var(--color-accent);
+}
+
+/* Secondary button */
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-hover-bg);
+}
+
+/* Edit modal */
+.edit-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-modal.hidden {
+  display: none;
+}
+
+.edit-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.edit-modal-content {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.edit-modal-content h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+}
+
+.edit-modal-content .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.edit-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 /* Utility */
 .hidden {
   display: none;

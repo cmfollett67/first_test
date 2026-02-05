@@ -44,6 +44,9 @@ const upload = multer({
   }
 });
 
+// Parse JSON bodies
+app.use(express.json());
+
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -117,6 +120,28 @@ app.delete('/api/delete/:filename', (req, res) => {
   writeMetadata(metadata);
 
   res.json({ message: 'Photo deleted successfully' });
+});
+
+// PUT /api/tags/:filename — update tags for a file
+app.put('/api/tags/:filename', (req, res) => {
+  const { filename } = req.params;
+  const { tags } = req.body;
+
+  if (!Array.isArray(tags)) {
+    return res.status(400).json({ error: 'Tags must be an array' });
+  }
+
+  const metadata = readMetadata();
+  const entry = metadata.find(e => e.filename === filename);
+
+  if (!entry) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
+  entry.tags = tags.map(t => t.trim().toLowerCase()).filter(Boolean);
+  writeMetadata(metadata);
+
+  res.json({ message: 'Tags updated successfully', entry });
 });
 
 // GET /api/search?q=term — search photos by partial tag match

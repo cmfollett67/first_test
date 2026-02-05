@@ -44,6 +44,23 @@
     <div id="archive"></div>
   </main>
 
+  <!-- Edit Tags Modal -->
+  <div id="edit-modal" class="edit-modal hidden">
+    <div class="edit-modal-backdrop"></div>
+    <div class="edit-modal-content">
+      <h2>Edit Tags</h2>
+      <input type="hidden" id="edit-filename">
+      <div class="form-group">
+        <label for="edit-tags">Tags (comma-separated)</label>
+        <input type="text" id="edit-tags" placeholder="e.g. sunset, beach, vacation">
+      </div>
+      <div class="edit-modal-actions">
+        <button type="button" id="edit-cancel" class="btn-secondary">Cancel</button>
+        <button type="button" id="edit-save">Save</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const archiveEl = document.getElementById('archive');
     const btnThumbnail = document.getElementById('btn-thumbnail');
@@ -164,13 +181,24 @@
           tagList.appendChild(span);
         });
 
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => openEditModal(entry.filename, entry.tags));
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = 'Delete';
         deleteBtn.addEventListener('click', () => deletePhoto(entry.filename));
 
+        btnGroup.appendChild(editBtn);
+        btnGroup.appendChild(deleteBtn);
+
         info.appendChild(tagList);
-        info.appendChild(deleteBtn);
+        info.appendChild(btnGroup);
         card.appendChild(info);
         grid.appendChild(card);
       });
@@ -242,11 +270,22 @@
         tdDate.textContent = new Date(entry.uploadedAt).toLocaleDateString();
 
         const tdAction = document.createElement('td');
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => openEditModal(entry.filename, entry.tags));
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = 'Delete';
         deleteBtn.addEventListener('click', () => deletePhoto(entry.filename));
-        tdAction.appendChild(deleteBtn);
+
+        btnGroup.appendChild(editBtn);
+        btnGroup.appendChild(deleteBtn);
+        tdAction.appendChild(btnGroup);
 
         const tdType = document.createElement('td');
         tdType.textContent = isVideo ? 'Video' : 'Image';
@@ -280,6 +319,74 @@
         alert('Network error. Is the server running?');
       }
     }
+
+    // Edit modal
+    const editModal = document.getElementById('edit-modal');
+    const editFilename = document.getElementById('edit-filename');
+    const editTagsInput = document.getElementById('edit-tags');
+    const editCancelBtn = document.getElementById('edit-cancel');
+    const editSaveBtn = document.getElementById('edit-save');
+    const editBackdrop = editModal.querySelector('.edit-modal-backdrop');
+
+    function openEditModal(filename, tags) {
+      editFilename.value = filename;
+      editTagsInput.value = tags.join(', ');
+      editModal.classList.remove('hidden');
+      editTagsInput.focus();
+    }
+
+    function closeEditModal() {
+      editModal.classList.add('hidden');
+      editFilename.value = '';
+      editTagsInput.value = '';
+    }
+
+    async function saveTags() {
+      const filename = editFilename.value;
+      const tagsString = editTagsInput.value;
+      const tags = tagsString.split(',').map(t => t.trim()).filter(Boolean);
+
+      editSaveBtn.disabled = true;
+      editSaveBtn.textContent = 'Saving...';
+
+      try {
+        const res = await fetch(`/api/tags/${filename}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tags })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const photo = photos.find(p => p.filename === filename);
+          if (photo) {
+            photo.tags = data.entry.tags;
+          }
+          closeEditModal();
+          render();
+        } else {
+          const data = await res.json();
+          alert(data.error || 'Failed to update tags');
+        }
+      } catch (err) {
+        alert('Network error. Is the server running?');
+      }
+
+      editSaveBtn.disabled = false;
+      editSaveBtn.textContent = 'Save';
+    }
+
+    editCancelBtn.addEventListener('click', closeEditModal);
+    editSaveBtn.addEventListener('click', saveTags);
+    editBackdrop.addEventListener('click', closeEditModal);
+    editTagsInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveTags();
+      } else if (e.key === 'Escape') {
+        closeEditModal();
+      }
+    });
 
     // View toggle
     btnThumbnail.addEventListener('click', () => {
