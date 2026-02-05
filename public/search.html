@@ -21,6 +21,18 @@
   </nav>
 
   <main>
+    <!-- Preview Carousel -->
+    <div id="preview-carousel" class="preview-carousel">
+      <div class="carousel-container">
+        <div id="carousel-items" class="carousel-items"></div>
+        <div class="carousel-overlay">
+          <div id="carousel-tags" class="carousel-tags"></div>
+        </div>
+        <div id="carousel-paused" class="carousel-paused hidden">Paused</div>
+      </div>
+      <div id="carousel-dots" class="carousel-dots"></div>
+    </div>
+
     <h1>Search Photos</h1>
     <form id="search-form">
       <div class="search-bar">
@@ -146,6 +158,154 @@
         resultsEl.innerHTML = '<p class="error">Network error. Is the server running?</p>';
       }
     });
+
+    // Preview Carousel
+    const carouselEl = document.getElementById('preview-carousel');
+    const carouselItems = document.getElementById('carousel-items');
+    const carouselTags = document.getElementById('carousel-tags');
+    const carouselDots = document.getElementById('carousel-dots');
+    const carouselPaused = document.getElementById('carousel-paused');
+
+    let previewItems = [];
+    let currentIndex = 0;
+    let carouselInterval = null;
+    let isPaused = false;
+
+    async function loadPreviewItems() {
+      try {
+        const res = await fetch('/api/all');
+        const data = await res.json();
+        // Sort by newest and take top 10
+        previewItems = data.results
+          .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))
+          .slice(0, 10);
+
+        if (previewItems.length === 0) {
+          carouselEl.classList.add('hidden');
+          return;
+        }
+
+        renderCarouselItems();
+        renderDots();
+        showSlide(0);
+        startCarousel();
+      } catch (err) {
+        carouselEl.classList.add('hidden');
+      }
+    }
+
+    function renderCarouselItems() {
+      carouselItems.innerHTML = '';
+      previewItems.forEach((entry, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide';
+        slide.dataset.index = index;
+
+        const isVideo = entry.mediaType === 'video';
+        const src = `/uploads/${entry.filename}`;
+
+        if (isVideo) {
+          const video = document.createElement('video');
+          video.src = src;
+          video.muted = true;
+          video.preload = 'metadata';
+          slide.appendChild(video);
+
+          const playIcon = document.createElement('div');
+          playIcon.className = 'carousel-play-icon';
+          playIcon.innerHTML = '<svg viewBox="0 0 24 24" width="48" height="48" fill="#fff"><path d="M8 5v14l11-7z"/></svg>';
+          slide.appendChild(playIcon);
+        } else {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = entry.tags.join(', ');
+          slide.appendChild(img);
+        }
+
+        slide.addEventListener('click', () => {
+          if (isVideo) {
+            window.openVideoOverlay(src);
+          }
+        });
+
+        carouselItems.appendChild(slide);
+      });
+    }
+
+    function renderDots() {
+      carouselDots.innerHTML = '';
+      previewItems.forEach((_, index) => {
+        const dot = document.createElement('button');
+        dot.className = 'carousel-dot';
+        dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
+        dot.addEventListener('click', () => {
+          showSlide(index);
+          resetCarousel();
+        });
+        carouselDots.appendChild(dot);
+      });
+    }
+
+    function showSlide(index) {
+      currentIndex = index;
+      const slides = carouselItems.querySelectorAll('.carousel-slide');
+      const dots = carouselDots.querySelectorAll('.carousel-dot');
+
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === index);
+      });
+
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+      });
+
+      // Update tags display
+      const entry = previewItems[index];
+      carouselTags.innerHTML = '';
+      entry.tags.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'tag';
+        span.textContent = tag;
+        carouselTags.appendChild(span);
+      });
+    }
+
+    function nextSlide() {
+      const next = (currentIndex + 1) % previewItems.length;
+      showSlide(next);
+    }
+
+    function startCarousel() {
+      if (carouselInterval) clearInterval(carouselInterval);
+      carouselInterval = setInterval(() => {
+        if (!isPaused) nextSlide();
+      }, 1500);
+    }
+
+    function resetCarousel() {
+      startCarousel();
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      carouselPaused.classList.toggle('hidden', !isPaused);
+    }
+
+    // Pause on hover
+    carouselEl.addEventListener('mouseenter', () => {
+      if (!isPaused) {
+        isPaused = true;
+        carouselPaused.classList.remove('hidden');
+      }
+    });
+
+    carouselEl.addEventListener('mouseleave', () => {
+      isPaused = false;
+      carouselPaused.classList.add('hidden');
+    });
+
+    // Load preview items on page load
+    loadPreviewItems();
   </script>
 </body>
 </html>
