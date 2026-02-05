@@ -201,6 +201,44 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Microphone button */
+.mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-input-border);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.mic-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+  background: var(--color-hover-bg);
+}
+
+.mic-btn.listening {
+  color: var(--color-error-text);
+  border-color: var(--color-error-text);
+  background: var(--color-error-bg);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.mic-icon {
+  display: block;
+}
+
 /* Image preview */
 #preview-container {
   margin-bottom: 1.25rem;
