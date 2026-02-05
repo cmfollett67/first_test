@@ -1,0 +1,41 @@
+// Shared video overlay player
+(function() {
+  // Create overlay DOM
+  const overlay = document.createElement('div');
+  overlay.id = 'video-overlay';
+  overlay.className = 'video-overlay hidden';
+  overlay.innerHTML = `
+    <div class="overlay-backdrop"></div>
+    <div class="overlay-content">
+      <button class="overlay-close" aria-label="Close">&times;</button>
+      <video id="overlay-video" controls autoplay></video>
+    </div>
+  `;
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.appendChild(overlay);
+
+    const backdrop = overlay.querySelector('.overlay-backdrop');
+    const closeBtn = overlay.querySelector('.overlay-close');
+    const video = overlay.querySelector('#overlay-video');
+
+    function close() {
+      video.pause();
+      video.src = '';
+      overlay.classList.add('hidden');
+    }
+
+    backdrop.addEventListener('click', close);
+    closeBtn.addEventListener('click', close);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+        close();
+      }
+    });
+  });
+
+  window.openVideoOverlay = function(src) {
+    const video = overlay.querySelector('#overlay-video');
+    video.src = src;
+    overlay.classList.remove('hidden');
+  };
+})();

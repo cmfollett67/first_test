@@ -8,6 +8,7 @@
 </head>
 <body>
   <script src="theme.js"></script>
+  <script src="overlay.js"></script>
   <nav>
     <a href="search.html">Search</a>
     <a href="upload.html">Upload</a>
@@ -34,6 +35,8 @@
           <option value="oldest">Oldest first</option>
           <option value="alpha-asc">Name A-Z</option>
           <option value="alpha-desc">Name Z-A</option>
+          <option value="images-first">Images first</option>
+          <option value="videos-first">Videos first</option>
         </select>
       </div>
     </div>
@@ -78,13 +81,29 @@
         case 'alpha-desc':
           sorted.sort((a, b) => b.originalName.localeCompare(a.originalName));
           break;
+        case 'images-first':
+          sorted.sort((a, b) => {
+            const aType = a.mediaType || 'image';
+            const bType = b.mediaType || 'image';
+            if (aType === bType) return new Date(b.uploadedAt) - new Date(a.uploadedAt);
+            return aType === 'image' ? -1 : 1;
+          });
+          break;
+        case 'videos-first':
+          sorted.sort((a, b) => {
+            const aType = a.mediaType || 'image';
+            const bType = b.mediaType || 'image';
+            if (aType === bType) return new Date(b.uploadedAt) - new Date(a.uploadedAt);
+            return aType === 'video' ? -1 : 1;
+          });
+          break;
       }
       return sorted;
     }
 
     function render() {
       if (photos.length === 0) {
-        archiveEl.innerHTML = '<p class="no-results">No photos in the archive yet.</p>';
+        archiveEl.innerHTML = '<p class="no-results">No files in the archive yet.</p>';
         return;
       }
 
@@ -105,11 +124,33 @@
       items.forEach(entry => {
         const card = document.createElement('div');
         card.className = 'photo-card';
+        const isVideo = entry.mediaType === 'video';
+        const src = `/uploads/${entry.filename}`;
 
-        const img = document.createElement('img');
-        img.src = `/uploads/${entry.filename}`;
-        img.alt = entry.tags.join(', ');
-        img.loading = 'lazy';
+        if (isVideo) {
+          const thumbWrap = document.createElement('div');
+          thumbWrap.className = 'video-thumb';
+
+          const video = document.createElement('video');
+          video.src = src;
+          video.muted = true;
+          video.preload = 'metadata';
+
+          const playIcon = document.createElement('div');
+          playIcon.className = 'play-icon';
+          playIcon.innerHTML = '<svg viewBox="0 0 24 24" width="36" height="36" fill="#fff"><path d="M8 5v14l11-7z"/></svg>';
+
+          thumbWrap.appendChild(video);
+          thumbWrap.appendChild(playIcon);
+          thumbWrap.addEventListener('click', () => window.openVideoOverlay(src));
+          card.appendChild(thumbWrap);
+        } else {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = entry.tags.join(', ');
+          img.loading = 'lazy';
+          card.appendChild(img);
+        }
 
         const info = document.createElement('div');
         info.className = 'card-info';
@@ -130,7 +171,6 @@
 
         info.appendChild(tagList);
         info.appendChild(deleteBtn);
-        card.appendChild(img);
         card.appendChild(info);
         grid.appendChild(card);
       });
@@ -147,6 +187,7 @@
           <tr>
             <th>Preview</th>
             <th>Filename</th>
+            <th>Type</th>
             <th>Tags</th>
             <th>Uploaded</th>
             <th></th>
@@ -158,14 +199,30 @@
 
       items.forEach(entry => {
         const tr = document.createElement('tr');
+        const isVideo = entry.mediaType === 'video';
+        const src = `/uploads/${entry.filename}`;
 
-        const tdImg = document.createElement('td');
-        const img = document.createElement('img');
-        img.src = `/uploads/${entry.filename}`;
-        img.alt = entry.tags.join(', ');
-        img.className = 'list-thumbnail';
-        img.loading = 'lazy';
-        tdImg.appendChild(img);
+        const tdPreview = document.createElement('td');
+        if (isVideo) {
+          const wrap = document.createElement('div');
+          wrap.className = 'list-video-thumb';
+          const video = document.createElement('video');
+          video.src = src;
+          video.muted = true;
+          video.preload = 'metadata';
+          video.className = 'list-thumbnail';
+          wrap.appendChild(video);
+          wrap.style.cursor = 'pointer';
+          wrap.addEventListener('click', () => window.openVideoOverlay(src));
+          tdPreview.appendChild(wrap);
+        } else {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = entry.tags.join(', ');
+          img.className = 'list-thumbnail';
+          img.loading = 'lazy';
+          tdPreview.appendChild(img);
+        }
 
         const tdName = document.createElement('td');
         tdName.textContent = entry.originalName;
@@ -191,8 +248,12 @@
         deleteBtn.addEventListener('click', () => deletePhoto(entry.filename));
         tdAction.appendChild(deleteBtn);
 
-        tr.appendChild(tdImg);
+        const tdType = document.createElement('td');
+        tdType.textContent = isVideo ? 'Video' : 'Image';
+
+        tr.appendChild(tdPreview);
         tr.appendChild(tdName);
+        tr.appendChild(tdType);
         tr.appendChild(tdTags);
         tr.appendChild(tdDate);
         tr.appendChild(tdAction);
@@ -204,7 +265,7 @@
     }
 
     async function deletePhoto(filename) {
-      if (!confirm('Delete this photo? This cannot be undone.')) return;
+      if (!confirm('Delete this file? This cannot be undone.')) return;
 
       try {
         const res = await fetch(`/api/delete/${filename}`, { method: 'DELETE' });

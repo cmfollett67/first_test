@@ -20,15 +20,16 @@
   </nav>
 
   <main>
-    <h1>Upload a Photo</h1>
+    <h1>Upload a Photo or Video</h1>
     <form id="upload-form">
       <div class="form-group">
-        <label for="photo">Select a .png file</label>
-        <input type="file" id="photo" name="photo" accept=".png" required>
+        <label for="photo">Select a .png or .mp4 file</label>
+        <input type="file" id="photo" name="photo" accept=".png,.mp4" required>
       </div>
 
       <div id="preview-container" class="hidden">
-        <img id="preview" alt="Image preview">
+        <img id="preview-img" alt="Image preview">
+        <video id="preview-video" controls></video>
       </div>
 
       <div class="form-group">
@@ -44,7 +45,8 @@
 
   <script>
     const photoInput = document.getElementById('photo');
-    const preview = document.getElementById('preview');
+    const previewImg = document.getElementById('preview-img');
+    const previewVideo = document.getElementById('preview-video');
     const previewContainer = document.getElementById('preview-container');
     const form = document.getElementById('upload-form');
     const messageEl = document.getElementById('message');
@@ -52,13 +54,19 @@
 
     photoInput.addEventListener('change', () => {
       const file = photoInput.files[0];
+      previewImg.classList.add('hidden');
+      previewVideo.classList.add('hidden');
+
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          preview.src = e.target.result;
-          previewContainer.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
+        const url = URL.createObjectURL(file);
+        if (file.type === 'video/mp4') {
+          previewVideo.src = url;
+          previewVideo.classList.remove('hidden');
+        } else {
+          previewImg.src = url;
+          previewImg.classList.remove('hidden');
+        }
+        previewContainer.classList.remove('hidden');
       } else {
         previewContainer.classList.add('hidden');
       }
@@ -79,7 +87,7 @@
         const data = await res.json();
 
         if (res.ok) {
-          messageEl.textContent = 'Photo uploaded successfully!';
+          messageEl.textContent = 'File uploaded successfully!';
           messageEl.className = 'message success';
           form.reset();
           previewContainer.classList.add('hidden');

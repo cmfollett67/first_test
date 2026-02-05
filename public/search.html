@@ -8,6 +8,7 @@
 </head>
 <body>
   <script src="theme.js"></script>
+  <script src="overlay.js"></script>
   <nav>
     <a href="search.html" class="active">Search</a>
     <a href="upload.html">Upload</a>
@@ -87,11 +88,11 @@
         const data = await res.json();
 
         if (data.results.length === 0) {
-          resultsEl.innerHTML = '<p class="no-results">No photos found matching your search.</p>';
+          resultsEl.innerHTML = '<p class="no-results">No results found matching your search.</p>';
           return;
         }
 
-        resultsEl.innerHTML = `<p class="result-count">${data.results.length} photo${data.results.length !== 1 ? 's' : ''} found</p>`;
+        resultsEl.innerHTML = `<p class="result-count">${data.results.length} result${data.results.length !== 1 ? 's' : ''} found</p>`;
 
         const grid = document.createElement('div');
         grid.className = 'photo-grid';
@@ -99,11 +100,33 @@
         data.results.forEach(entry => {
           const card = document.createElement('div');
           card.className = 'photo-card';
+          const isVideo = entry.mediaType === 'video';
+          const src = `/uploads/${entry.filename}`;
 
-          const img = document.createElement('img');
-          img.src = `/uploads/${entry.filename}`;
-          img.alt = entry.tags.join(', ');
-          img.loading = 'lazy';
+          if (isVideo) {
+            const thumbWrap = document.createElement('div');
+            thumbWrap.className = 'video-thumb';
+
+            const video = document.createElement('video');
+            video.src = src;
+            video.muted = true;
+            video.preload = 'metadata';
+
+            const playIcon = document.createElement('div');
+            playIcon.className = 'play-icon';
+            playIcon.innerHTML = '<svg viewBox="0 0 24 24" width="36" height="36" fill="#fff"><path d="M8 5v14l11-7z"/></svg>';
+
+            thumbWrap.appendChild(video);
+            thumbWrap.appendChild(playIcon);
+            thumbWrap.addEventListener('click', () => window.openVideoOverlay(src));
+            card.appendChild(thumbWrap);
+          } else {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = entry.tags.join(', ');
+            img.loading = 'lazy';
+            card.appendChild(img);
+          }
 
           const tagList = document.createElement('div');
           tagList.className = 'tag-list';
@@ -114,7 +137,6 @@
             tagList.appendChild(span);
           });
 
-          card.appendChild(img);
           card.appendChild(tagList);
           grid.appendChild(card);
         });

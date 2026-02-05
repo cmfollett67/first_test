@@ -19,7 +19,12 @@ if (!fs.existsSync(METADATA_FILE)) {
   fs.writeFileSync(METADATA_FILE, JSON.stringify([], null, 2));
 }
 
-// Configure multer for .png uploads
+// Configure multer for .png and .mp4 uploads
+const ALLOWED_TYPES = {
+  'image/png': 'image',
+  'video/mp4': 'video'
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename: (req, file, cb) => {
@@ -31,10 +36,10 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'image/png') {
+    if (ALLOWED_TYPES[file.mimetype]) {
       cb(null, true);
     } else {
-      cb(new Error('Only .png files are allowed'));
+      cb(new Error('Only .png and .mp4 files are allowed'));
     }
   }
 });
@@ -55,7 +60,7 @@ function writeMetadata(data) {
   fs.writeFileSync(METADATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// POST /api/upload — upload a photo with tags
+// POST /api/upload — upload a file with tags
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
@@ -65,10 +70,13 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
     ? req.body.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean)
     : [];
 
+  const mediaType = ALLOWED_TYPES[req.file.mimetype] || 'image';
+
   const entry = {
     filename: req.file.filename,
     originalName: req.file.originalname,
     tags,
+    mediaType,
     uploadedAt: new Date().toISOString()
   };
 
@@ -79,7 +87,7 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
     writeMetadata(metadata);
   }
 
-  res.json({ message: 'Photo uploaded successfully', entry });
+  res.json({ message: 'File uploaded successfully', entry });
 });
 
 // GET /api/all — return all photos metadata
@@ -129,7 +137,7 @@ app.get('/api/search', (req, res) => {
 
 // Multer error handling
 app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError || err.message === 'Only .png files are allowed') {
+  if (err instanceof multer.MulterError || err.message === 'Only .png and .mp4 files are allowed') {
     return res.status(400).json({ error: err.message });
   }
   next(err);
